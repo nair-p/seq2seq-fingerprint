@@ -1,29 +1,20 @@
 # seq2seq-fingerprint
-This code implements sequence to sequence fingerprint.
+This code implements sequence to sequence fingerprint and then uses these fingerprints as input to a variational autoencoder. 
 
 ## Installation requirements
 
 1. We right now depend on the tensorflow==1.4.1. 
 2. `smile` is required(for Ubuntu OS, `pip install smile`).
-3. ZINC is used for our experiments, which is a free database of commercially-available compounds for virtual screening. You can download ZINC datasets from [http://zinc.docking.org/](http://zinc.docking.org/)
+3. ZINC is used for our experiments, which is a free database of commercially-available compounds for virtual screening. You can download ZINC datasets from [http://zinc.docking.org/](http://zinc.docking.org/) - You can use any SMILES dataset as you wish. 
 
-## References:
-If our work is helpful for your research, please consider citing:
-```bash
-@article{xu2017seq2seqfingerprint,
-  title={Seq2seq Fingerprint: An Unsupervised Deep Molecular Embedding for Drug Discovery},
-  author={Zheng Xu, Sheng Wang, Feiyun Zhu, and Junzhou Huang},
-  journal={BCB’17, Aug 2017, Boston, Massachusetts USA},
-  year={2017}
-}
-```
+
 ## Input and output files:
 Path name | Path | Discription
 ------------ | --------------|-------------------
-smi_path   | /data/zinc/zinc.smi	  |- input smile data for building vocab 
-vocab_path |~/expr/seq2seq-fp/pretrain/zinc.vocab | - directory to save vocabulary 
-out_path |~/expr/seq2seq-fp/pretrain/zinc.tokens | - directory to save tokens 
-tmp_path |~/expr/seq2seq-fp/pretrain/zinc.tmp | - directory to save temporary data 
+smi_path   | ./small_datasets/smiles_small.smi	  |- input smile data for building vocab 
+vocab_path | ./small_datasets/smiles.vocab | - directory to save vocabulary 
+out_path | ./small_datasets/smiles.tokens | - directory to save tokens 
+tmp_path | ./small_datasets/smiles.tmp | - directory to save temporary data 
 
 
 ## Running workflow:
@@ -35,14 +26,14 @@ tmp_path |~/expr/seq2seq-fp/pretrain/zinc.tmp | - directory to save temporary da
  Use the build_vocab switch to turn on building vocabulary functionality.
 
 ```bash
-python data.py --build_vocab 1 --smi_path /data/zinc/zinc.smi --vocab_path ~/expr/seq2seq-fp/pretrain/zinc.vocab --out_path ~/expr/seq2seq-fp/pretrain/zinc.tokens --tmp_path ~/expr/seq2seq-fp/pretrain/zinc.tmp
+python data.py --build_vocab 1 --smi_path ./small_datasets/smiles_small.smi --vocab_path ./small_datasets/smiles.vocab --out_path ./small_datasets/smiles.tokens --tmp_path ./small_datasets/smiles.tmp
 ```
 
 Example Output:
 ```
 Creating temp file...
 Building vocabulary...
-Creating vocabulary /home/username/expr/test/pretrain/zinc.vocab from data /tmp/tmpcYVqV0
+Creating vocabulary /data/smiles.vocab from data /tmp/tmpcYVqV0
   processing line 100000
   processing line 200000
   processing line 300000
@@ -58,7 +49,7 @@ Tokenizing data in /tmp/tmpcYVqV0
   Switch off build_vocab option, or simply hide it from the command line.
   (note: zinc.smi is used for training, zinc_test.smi is used for evaluating)
 ```bash
-python data.py --smi_path /data/zinc/zinc_test.smi --vocab_path ~/expr/seq2seq-fp/pretrain/zinc.vocab --out_path ~/expr/seq2seq-fp/pretrain/zinc_test.tokens --tmp_path ~/expr/seq2seq-fp/pretrain/zinc_test.tmp
+python data.py --smi_path ./small_datasets/smiles_small_test.smi --vocab_path ./small_datasets/smiles.vocab --out_path ./small_datasets/smiles.tokens --tmp_path ./small_datasets/smiles.tmp
 ```
 Example Output:
 ```
@@ -70,7 +61,7 @@ Tokenizing data in /tmp/tmpmP8R_P
 ### 2. Train
 #### a) Build model(model.json)
 ```bash
-python train.py build ~/expr/test/gru-2-256/
+python train.py build .
 ```
 model.json example
  ```bash
@@ -79,7 +70,7 @@ model.json example
  ```
 #### b) Train model
 ```bash
-python train.py train ~/expr/test/gru-2-256/ ~/expr/seq2seq-fp/pretrain/zinc.tokens ~/expr/seq2seq-fp/pretrain/zinc_test.tokens --batch_size 64
+python train.py train . ./small_datasets/smiles.tokens ./small_datasets/smiles.tokens --batch_size 64
 ```
 Example Output:
 ```
@@ -115,14 +106,14 @@ global step 400 learning rate 0.5000 step-time 0.259872 perplexity 6.460571
 ```
 
 ### 3. Decode
- (**note**: model.json and weights in the subdirectory of ```~/expr/test/gru-2-256/``` are necessary to run decode)
+ (**note**: model.json and weights ` are necessary to run decode)
 ```bash
-python decode.py sample ~/expr/test/gru-2-256/  ~/expr/seq2seq-fp/pretrain/zinc.vocab ~/expr/seq2seq-fp/pretrain/zinc_test.tmp --sample_size 500
+python decode.py sample .  ./small_datasets/smiles.vocab ./small_datasets/smiles.tmp --sample_size 500
 ```
 Example output:
 ```
-Loading seq2seq model definition from /home/zhengxu/expr/test/gru-4-256/model.json...
-Loading model weights from checkpoint_dir: /home/zhengxu/expr/test/gru-4-256/weights/
+Loading seq2seq model definition from ./model.json...
+Loading model weights from checkpoint_dir: ./weights/
 : CC(OC1=CC=C2/C3=C(/CCCC3)C(=O)OC2=C1C)C(=O)N[C@@H](CC4=CC=CC=C4)C(O)=O
 > CC(OC1=CC=C2/C3=C(/CCCC3)C(=O)OC2=C1C)C(=O)N[C@@H](CC4=CC=CC=C4)C(O)=O
 
@@ -141,59 +132,7 @@ Loading model weights from checkpoint_dir: /home/zhengxu/expr/test/gru-4-256/wei
 #### All FP
    Generate all fingerprint
 ```bash
-python decode.py fp ~/expr/test/gru-2-256/ ~/expr/seq2seq-fp/pretrain/zinc.vocab ~/expr/seq2seq-fp/pretrain/zinc_test.tmp ~/expr/test_2.fp
+python decode.py fp . ./small_datasets/smiles.vocab ./small_datasets/smiles.tmp ./small_datasets/test_small.fp
 ```
-Example Output:
-```
-Progress: 200/10000
-Progress: 400/10000
-Progress: 600/10000
-Progress: 800/10000
-Progress: 1000/10000
-Progress: 1200/10000
-Progress: 1400/10000
-Progress: 1600/10000
-Progress: 1800/10000
-Progress: 2000/10000
-Progress: 2200/10000
-Progress: 2400/10000
-Progress: 2600/10000
-Progress: 2800/10000
-Progress: 3000/10000
-Progress: 3200/10000
-Progress: 3400/10000
-Progress: 3600/10000
-Progress: 3800/10000
-Progress: 4000/10000
-Progress: 4200/10000
-Progress: 4400/10000
-Progress: 4600/10000
-Progress: 4800/10000
-Progress: 5000/10000
-Progress: 5200/10000
-Progress: 5400/10000
-Progress: 5600/10000
-Progress: 5800/10000
-Progress: 6000/10000
-Progress: 6200/10000
-Progress: 6400/10000
-Progress: 6600/10000
-Progress: 6800/10000
-Progress: 7000/10000
-Progress: 7200/10000
-Progress: 7400/10000
-Progress: 7600/10000
-Progress: 7800/10000
-Progress: 8000/10000
-Progress: 8200/10000
-Progress: 8400/10000
-Progress: 8600/10000
-Progress: 8800/10000
-Progress: 9000/10000
-Progress: 9200/10000
-Progress: 9400/10000
-Progress: 9600/10000
-Progress: 9800/10000
-Exact match count: 9665/10000
-```
+
 
